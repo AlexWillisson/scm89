@@ -13,7 +13,7 @@
       (cons (car expr)
 	    (map (lambda (expr) (sub-in-known expr env)) (cdr expr)))
       (if (and (symbol? expr) (environment-bound? env expr))
-	  (eval expr env)
+	  (eval-and-simplify (eval expr env) env)
 	  expr)))
 
 ;; borrowing heavily (well, stolen) from ps3
