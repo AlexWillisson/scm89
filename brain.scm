@@ -16,6 +16,12 @@
 
 (define *the-empty-environment* (make-top-level-environment))
 
+(define main-env (make-top-level-environment))
+
+(define (bind! variable value)
+  (set! main-env (extend-top-level-environment main-env
+					       (list variable)
+					       (list value))))
 (define (sub-in-known expr env)
   (if (pair? expr)
       (cons (car expr)
