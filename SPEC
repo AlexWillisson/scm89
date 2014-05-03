@@ -1,0 +1,33 @@
+> x = 3
+'(bind! x 3)
+Side-effect: x is now 3
+; 3
+ 
+> 4 * 8 - 3 + 2
+'(+ (- (* 4 8) 3) 2)
+Side-effect: none
+; 31
+ 
+> deriv(x^2, x)
+'(deriv (^ x 2) x)
+Side-effect: none
+; 2*x
+
+> x = y + 1
+; ERROR: y is not defined
+> y = 41
+Side-effect: (bind! y 41)
+; 41
+> x = y + 1
+Side-effect: (bind! x (+ y 1))
+; 42
+> z <- y + 1
+Side-effect: (bind! z '(+ y 1))
+; y + 1
+> z
+; 42
+> y = 944
+Side-effect: (bind! y 944)
+; 944
+> z
+; 945
