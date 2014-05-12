@@ -19,3 +19,4 @@
 (load "pattern-operator")
 
 (load "brain")
+(load "textout")
