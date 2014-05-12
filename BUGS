@@ -1,0 +1,10 @@
+Known bugs:
+
+lambda functions using environment variables not passed in through the
+lambda function's arguments cause unbound variable errors.
+
+Reproduction:
+(bind! 'foo 123)
+(bind! 'bar (lambda () foo))
+(eval-and-simplify '(bar) main-env)
+; Unbounc variable: foo
