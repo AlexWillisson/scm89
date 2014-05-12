@@ -1,6 +1,6 @@
 (define (lisp->infix expr)
   (if (pair? expr)
-      (let ((func (car expr)) (args (cdr expr)))
+      (let ((func (car expr)) (args (map lisp->infix (cdr expr))))
 	(cond ((eq? func '+)
 	       (wrap-with-parens (join args " + ")))
 	      ((eq? func '-)
@@ -15,6 +15,8 @@
 	       (string "(" (car args) ")^(" (cadr args) ")"))
 	      ((eq? func 'modulo)
 	       (string "(" (car args) ") % (" (cadr args) ")"))
+	      ((pair? func)
+	       (error "Got lisp expression as function. Can't turn into infix"))
 	      (else
 	       (string func "(" (join args ", ") ")"))))
       expr))
