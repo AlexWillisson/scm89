@@ -10,11 +10,26 @@
 					       (list value))))
 (define (sub-in-known expr env)
   (if (pair? expr)
-      (cons (car expr)
-	    (map (lambda (expr) (sub-in-known expr env)) (cdr expr)))
+      (if (evalable? expr env)
+	  (eval expr env)
+	  (cons (car expr)
+		(map (lambda (expr) (sub-in-known expr env)) (cdr expr))))
       (if (and (symbol? expr) (environment-bound? env expr))
 	  (eval-and-simplify (eval expr env) env)
 	  expr)))
+
+(define (eval-and-simplify expr env)
+  (algebra-simplifier (sub-in-known expr env)))
+
+(define (evalable? expr env)
+  (if (pair? expr)
+      (and (evalable? (car expr) env) (evalable? (cdr expr) env))
+      (if (symbol? expr)
+	  (if (environment-bound? env expr)
+	      #t
+	      #f)
+	  #t)))
+
 
 ;; borrowing heavily (well, stolen) from ps3
 (define algebra-simplifier
@@ -50,7 +65,6 @@
     (rule `(* (?? a) (+ (?? b)) (?? c))
 	  `(+ ,@(map (lambda (x) `(* ,@a ,x ,@c)) b)))
 
-
     ;; Numerical simplifications below
 
     (rule `(+ 0 (?? x)) `(+ ,@x))
@@ -79,8 +93,5 @@
     (rule `(+ (?? y) (? a) (* (? n) (? a)) (?? z))
 	  `(+ ,@y (* (+ ,n 1) ,a) ,@z))
     )))
-
-(define (eval-and-simplify expr env)
-  (algebra-simplifier (sub-in-known expr env)))
 
 ':ok
