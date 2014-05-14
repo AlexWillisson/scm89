@@ -61,7 +61,11 @@
   (apply p:choice (map p:symbol symbols)))
 
 (define (stitch strings)
-  (apply string-append strings))
+  (apply string-append
+	 (map
+	  (lambda (s)
+	    (if (null? s) "" s))
+	  strings)))
 
 (define (p:stitch . parsers)
   (p:apply stitch (apply p:sequence parsers)))
@@ -141,6 +145,9 @@
 (define comma
   (p:tokenize "," '()))
 
+(define dot
+  (p:symbol "."))
+
 (define plus
   (p:tokenize "+" '+))
 
@@ -175,8 +182,25 @@
 (define alphanumeric
   (p:choice alpha digit))
 
+(define integer
+  (p:apply stitch (p:many digit 1)))
+
+(define float
+  (p:choice
+   (p:stitch (p:opt integer) dot integer)
+   (p:stitch integer dot)
+   integer))
+
 (define number
-  (p:apply string->number (p:apply stitch (p:many digit 1))))
+  (p:apply
+   string->number
+   (p:stitch
+    float
+    (p:opt
+     (p:stitch
+      (p:any "e" "E")
+      (p:any "+" "-" "")
+      integer)))))
 
 (define identifier
   (p:apply stitch (p:sequence alpha (p:apply stitch (p:many alphanumeric 0)))))
@@ -187,13 +211,13 @@
      (cons (cadr results) (caddr results)))
    (p:sequence
     open
-    add-expr
+    (lambda (input) (add-expr input))
     (p:many
      (p:apply
       cadr
       (p:sequence
        comma
-       add-expr)) 0)
+       (lambda (input) (add-expr input)))) 0)
     close)))
 
 (define parens
