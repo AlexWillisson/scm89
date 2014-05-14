@@ -4,10 +4,11 @@
 
 (define (p:symbol symbol)
   (lambda (input)
-    (if (string-prefix? symbol input)
-	(list symbol
-	      (string-tail input (string-length symbol)))
-	'())))
+    (let ((input (string-trim-left input)))
+      (if (string-prefix? symbol input)
+	  (list symbol
+		(string-tail input (string-length symbol)))
+	  '()))))
 
 (define (p:return value)
   (lambda (input)
@@ -40,6 +41,13 @@
 		(lp (car rest) (cdr rest))
 		'()))))))
 
+(define (p:apply function parser)
+  (lambda (input)
+    (let ((result (parser input)))
+      (if (pair? result)
+	  (list (function (car result)) (cadr result))
+	  '()))))
+
 (define (p:tokenize symbol token)
   (p:apply car (p:sequence (p:return token) (p:symbol symbol))))
 
@@ -51,13 +59,6 @@
 
 (define (p:any . symbols)
   (apply p:choice (map p:symbol symbols)))
-
-(define (p:apply function parser)
-  (lambda (input)
-    (let ((result (parser input)))
-      (if (pair? result)
-	  (list (function (car result)) (cadr result))
-	  '()))))
 
 (define (stitch strings)
   (apply string-append strings))
@@ -79,7 +80,7 @@
 
 (define (insert-left! tree value)
   (if (pair? tree)
-      (if (list? (cdr tree))
+      (if (null? (cdr tree))
 	  (begin
 	    (set-car! tree (list (list)))
 	    (set-cdr! tree value))
@@ -91,7 +92,6 @@
       (if (pair? tree)
 	  (begin
 	    (lp (cdr tree))
-	    (pp (car tree))
 	    (insert-left! flipped (car tree)))))
     flipped))
 
@@ -100,6 +100,15 @@
 	((not (pair? tree)) (list tree))
 	(else (append (flatten (car tree))
 		      (flatten (cdr tree))))))
+
+; If a list is made of lists, crunch will remove one layer of nesting.
+(define (crunch list)
+  (apply append list))
+
+; Same as crunch, except first element is untouched.
+; Used for tree manipulation.
+(define (crunch-back list)
+  (cons (car list) (crunch (cadr list))))
 
 (define (associate tree)
   (if (null? (car tree))
@@ -112,30 +121,116 @@
 (define (left-associate tree)
   (associate (flip-tree tree)))
 
+(define (right-associate tree)
+  (if (null? (cdr tree))
+      (car tree)
+      (list (cadr tree) (car tree) (right-associate (cddr tree)))))
+
+(define (p:operator op sub-exp associativity)
+  (p:apply associativity
+	   (p:apply crunch-back
+		    (p:sequence sub-exp
+				(p:many (p:sequence op sub-exp) 0)))))
+
+(define open
+  (p:tokenize "(" '()))
+
+(define close
+  (p:tokenize ")" '()))
+
+(define comma
+  (p:tokenize "," '()))
+
 (define plus
   (p:tokenize "+" '+))
 
 (define minus
   (p:tokenize "-" '-))
 
+(define times
+  (p:tokenize "*" '*))
+
+(define divide
+  (p:tokenize "/" '/))
+
+(define exponent
+  (p:tokenize "^" 'expt))
+
 (define digit
   (p:any "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))
+
+(define lower
+  (p:any "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k"
+	 "l" "m" "n" "o" "p" "q" "r" "s" "t" "u" "v"
+	 "w" "x" "y" "z"))
+
+(define upper
+  (p:any "A" "B" "C" "D" "E" "F" "G" "H" "I" "J" "K"
+	 "L" "M" "N" "O" "P" "Q" "R" "S" "T" "U" "V"
+	 "W" "X" "Y" "Z"))
+
+(define alpha
+  (p:choice lower upper))
+
+(define alphanumeric
+  (p:choice alpha digit))
 
 (define number
   (p:apply string->number (p:apply stitch (p:many digit 1))))
 
-(define (id input) input)
+(define identifier
+  (p:apply stitch (p:sequence alpha (p:apply stitch (p:many alphanumeric 0)))))
 
-(define expr
-  (p:apply flatten
-	   (p:sequence number
-		       (p:opt (p:sequence (p:choice plus minus)
-					  (lambda (input) (expr input)))))))
+(define parameter-list
+  (p:apply
+   (lambda (results)
+     (cons (cadr results) (caddr results)))
+   (p:sequence
+    open
+    add-expr
+    (p:many
+     (p:apply
+      cadr
+      (p:sequence
+       comma
+       add-expr)) 0)
+    close)))
 
-(define parse
-  (p:apply left-associate expr))
+(define parens
+  (p:choice 
+   number
+   (p:apply
+    (lambda (results)
+      (cons (string->symbol (car results)) (cadr results)))
+    (p:sequence identifier parameter-list))
+   identifier
+   (p:apply cadr
+	    (p:sequence open
+			(lambda (input) (add-expr input))
+			close))))
 
-(parse "3+4-5")
+(define unary
+  (p:apply
+   (lambda (results)
+     (if (null? (car results))
+	 (cadr results)
+	 results))
+   (p:sequence (p:opt minus) parens)))
 
+(define expt-expr
+  (p:operator exponent unary right-associate))
 
+(define mul-expr
+  (p:operator (p:choice times divide) expt-expr left-associate))
+
+(define add-expr
+  (p:operator (p:choice plus minus) mul-expr left-associate))
+
+(define (repl)
+  (let lp ()
+    (display "> ")
+    (write-line (eval (car (add-expr (read-line))) user-initial-environment))
+    (lp)))
+
+(repl)
 
