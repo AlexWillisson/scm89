@@ -278,12 +278,13 @@
     (display "> ")
     ;(write-line (eval (car (add-expr (read-line))) user-initial-environment))
     (let ((result (statement (read-line))))
-      (pp (car result))
       (if (> (string-length (cadr result)) 0)
 	  (begin
 	    (display "Unconsumed input: ")
-	    (write-line (cadr result)))))
+	    (write-line (cadr result))))
+      (pp (eval-and-simplify (car result))))
     (lp)))
 
-(repl)
+;(repl)
 
+':ok

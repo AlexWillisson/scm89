@@ -20,3 +20,4 @@
 
 (load "brain")
 (load "textout")
+(load "parser")
