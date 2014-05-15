@@ -163,6 +163,12 @@
 (define exponent
   (p:tokenize "^" 'expt))
 
+(define set
+  (p:tokenize "=" 'set!))
+
+(define bind
+  (p:tokenize "<-" 'bind!))
+
 (define digit
   (p:any "0" "1" "2" "3" "4" "5" "6" "7" "8" "9"))
 
@@ -203,7 +209,9 @@
       integer)))))
 
 (define identifier
-  (p:apply stitch (p:sequence alpha (p:apply stitch (p:many alphanumeric 0)))))
+  (p:apply
+   string->symbol
+   (p:stitch alpha (p:apply stitch (p:many alphanumeric 0)))))
 
 (define parameter-list
   (p:apply
@@ -225,7 +233,7 @@
    number
    (p:apply
     (lambda (results)
-      (cons (string->symbol (car results)) (cadr results)))
+      (cons (car results) (cadr results)))
     (p:sequence identifier parameter-list))
    identifier
    (p:apply cadr
@@ -250,10 +258,31 @@
 (define add-expr
   (p:operator (p:choice plus minus) mul-expr left-associate))
 
+(define declaration
+  (p:apply
+   (lambda (results)
+     (list 'set! (car results) (caddr results)))
+   (p:sequence identifier set add-expr)))
+
+(define relation
+  (p:apply
+   (lambda (results)
+     (list 'bind! (car results) (caddr results)))
+   (p:sequence identifier bind add-expr)))
+
+(define statement
+  (p:choice declaration relation add-expr))
+
 (define (repl)
   (let lp ()
     (display "> ")
-    (write-line (eval (car (add-expr (read-line))) user-initial-environment))
+    ;(write-line (eval (car (add-expr (read-line))) user-initial-environment))
+    (let ((result (statement (read-line))))
+      (pp (car result))
+      (if (> (string-length (cadr result)) 0)
+	  (begin
+	    (display "Unconsumed input: ")
+	    (write-line (cadr result)))))
     (lp)))
 
 (repl)
