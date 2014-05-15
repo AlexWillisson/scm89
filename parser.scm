@@ -345,7 +345,7 @@
 	  (begin
 	    (display "Unconsumed input: ")
 	    (write-line (cadr result))))
-      (pp (eval-and-simplify (car result))))
+      (pp (lisp->infix (eval-and-simplify (car result)))))
     (lp)))
 
 

@@ -1,3 +1,7 @@
+This is a loose spec for what the parser should be handing to the
+evaluator based on specific user input. We used it to make sure we
+were both on pretty much the same track.
+
 > x = 3
 '(set! x 3)
 Side-effect: x is now 3
