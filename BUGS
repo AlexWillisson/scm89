@@ -7,4 +7,10 @@ Reproduction:
 (bind! 'foo 123)
 (bind! 'bar (lambda () foo))
 (eval-and-simplify '(bar) main-env)
-; Unbounc variable: foo
+; Unbound variable: foo
+
+This is because (lambda () foo) is evaluated in the scheme
+environment. So it's trying to pull foo out of the scheme environment,
+instead of main-env. This is a big problem, and it breaks the promised
+separation of environments. (lambda () foo) needs to be moved to be
+evaluated inside main-env.
