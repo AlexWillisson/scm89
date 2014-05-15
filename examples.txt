@@ -1,0 +1,25 @@
+; To run these examples, run scheme and type
+(load "load")
+(repl)
+; in order to get a REPL.
+
+> 7 - 8 + 2 - 163.0 * 2e-4
+.9674
+> -(42 * -9) + 7
+385
+> x = 8
+:ok
+> 28 * x - 3
+221
+> y <- x - 19
+:ok
+> y
+-11
+> x = 10
+:ok
+> y
+-9
+> f(x) = x^2 + 3
+:ok
+> f(2)
+7
