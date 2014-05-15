@@ -7,4 +7,4 @@ Reproduction:
 (bind! 'foo 123)
 (bind! 'bar (lambda () foo))
 (eval-and-simplify '(bar) main-env)
-; Unbounc variable: foo
+; Unbound variable: foo
