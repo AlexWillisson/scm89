@@ -33,7 +33,8 @@
 
 (define (evalable? expr)
   (if (pair? expr)
-      (and (evalable? (car expr)) (evalable? (cdr expr)))
+      (or (eq? (car expr) 'lambda)
+	  (and (evalable? (car expr)) (evalable? (cdr expr))))
       (if (symbol? expr)
 	  (if (environment-bound? main-env expr)
 	      #t
